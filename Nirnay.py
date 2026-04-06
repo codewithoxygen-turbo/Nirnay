@@ -107,21 +107,7 @@ st.markdown(
         box-shadow: none;
     }}
 
-    #MainMenu,
-    footer,
-    .stApp > footer,
-    .stDeployButton,
-    .css-1lsmgbg,
-    .viewerBadge_container__1QSob,
-    .css-1adrfps,
-    .css-1k0ckh2,
-    header,
-    .css-18ni7ap,
-    .css-1v3fvcr,
-    [data-testid="stDecorationBadge"],
-    .streamlit-badge,
-    .decorationContainer,
-    [title="Made with Streamlit"] {{
+    #MainMenu, footer, .stDeployButton, .css-1lsmgbg, .viewerBadge_container__1QSob, .css-1adrfps, .css-1k0ckh2, header, .css-18ni7ap, .css-1v3fvcr {{
         visibility: hidden !important;
         opacity: 0 !important;
         height: 0 !important;
@@ -2831,29 +2817,6 @@ st.markdown(
     }}
 
     </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-# Remove any remaining Streamlit host branding that may appear outside the app container
-st.markdown(
-    """
-    <script>
-    const removeStreamlitBranding = () => {
-        document.querySelectorAll(
-            'footer:not(.custom-footer), .stApp > footer, .stDeployButton, .viewerBadge_container__1QSob, [data-testid="stDecorationBadge"], .streamlit-badge, .decorationContainer, [title="Made with Streamlit"], a[href*="streamlit.io"], a[href*="streamlit.app"]'
-        ).forEach(el => el.remove());
-        document.querySelectorAll('div, span, a').forEach(el => {
-            if (el.innerText && el.innerText.includes('Hosted with Streamlit')) {
-                el.remove();
-            }
-        });
-    };
-    const observer = new MutationObserver(removeStreamlitBranding);
-    observer.observe(document, { childList: true, subtree: true });
-    window.addEventListener('load', removeStreamlitBranding);
-    setTimeout(removeStreamlitBranding, 1000);
-    </script>
     """,
     unsafe_allow_html=True,
 )
