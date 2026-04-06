@@ -32,20 +32,6 @@ surface_white = "#f5f7fb"
 surface_frost = "#dde6f4"
 primary_cyan = "#27c8f1"
 
-st.markdown(
-    """
-    <style>
-    [data-testid*="viewerBadge"], [class*="viewerBadge"], a[href*="streamlit"], a[href*="share.streamlit.io"], a[href*="streamlit.app"], a[href*="streamlit.io"], a[href*="streamlit.cloud"], a[href*="streamlit.community"], #MainMenu, header, footer, .stAppFooter {
-        visibility: hidden !important;
-        display: none !important;
-        opacity: 0 !important;
-        height: 0 !important;
-        width: 0 !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
 st.markdown(
     f"""
@@ -121,7 +107,21 @@ st.markdown(
         box-shadow: none;
     }}
 
-    #MainMenu, footer, .stDeployButton, .css-1lsmgbg, .viewerBadge_container__1QSob, .viewerBadge, [class*="viewerBadge"], .css-1adrfps, .css-1k0ckh2, header, .css-18ni7ap, .css-1v3fvcr, a[href*="streamlit"], a[href*="share.streamlit.io"], a[href*="streamlit.app"], a[href*="streamlit.io"], a[href*="streamlit.cloud"], a[href*="streamlit.community"], footer a[href*="streamlit"], .stAppFooter, [data-testid*="stFooter"], [data-testid*="viewerBadge"] {{
+    #MainMenu,
+    footer,
+    .stApp > footer,
+    .stDeployButton,
+    .css-1lsmgbg,
+    .viewerBadge_container__1QSob,
+    .css-1adrfps,
+    .css-1k0ckh2,
+    header,
+    .css-18ni7ap,
+    .css-1v3fvcr,
+    [data-testid="stDecorationBadge"],
+    .streamlit-badge,
+    .decorationContainer,
+    [title="Made with Streamlit"] {{
         visibility: hidden !important;
         opacity: 0 !important;
         height: 0 !important;
@@ -851,7 +851,6 @@ st.markdown(
             padding: 1.1rem 1.5rem !important;
             font-size: 1.05rem !important;
             min-height: 50px !important;
-            border-radius: 12px !important;
         }}
         .custom-footer {{
             padding: 1.25rem 0.75rem;
@@ -3630,8 +3629,6 @@ def fill_chat_prompt(suggestion, input_key):
     st.session_state[input_key] = suggestion
     st.session_state.chat_warning = ""
     st.session_state.chat_error = ""
-    if hasattr(st, "experimental_rerun"):
-        st.experimental_rerun()
 
 
 def clear_chat_history(mode=None):
@@ -3689,7 +3686,7 @@ def handle_chat_submit(input_key, mode):
             system_prompt = (
                 "You are a medical AI assistant integrated into the NirnayAI application. Your role is to provide accurate, safe, and structured medical guidance only.\n\n"
                 "CORE RULE: You must ONLY respond to queries related to the medical field. If a user asks anything outside medical topics (e.g., coding, finance, relationships, general advice), you must politely refuse and redirect: 'I'm designed to assist only with medical-related questions. Please ask about symptoms, health conditions, treatments, or wellness.'\n\n"
-                "MEDICAL SCOPE: You are allowed to answer symptoms analysis, possible conditions (non-diagnostic), general treatment options, first-aid guidance, preventive healthcare, lifestyle and wellness advice, medication general info (no prescriptions).\n\n"
+                "MEDICAL SCOPE: You are allowed to answer symptoms analysis, possible conditions (non-diagnostic), general treatment options, first-aid guidance, preventive healthcare, lifestyle and wellness advice, medication general info (no prescriptions). If the user mentions prescribed medication, you may discuss general information about the medication, common side effects, precautions, and potential interactions, but do not make new prescriptions or change dosing.\n\n"
                 "SAFETY RULES: Never give final diagnosis. Never prescribe specific medicines or dosages. Always include a disclaimer: 'This is not a medical diagnosis. Please consult a qualified doctor for professional advice.' For serious symptoms (chest pain, breathing difficulty, etc.), respond with immediate action steps and suggest seeking urgent medical help.\n\n"
                 "RESPONSE STYLE: Be clear, calm, and professional. Use structured format: Possible Causes, What You Can Do, When to See a Doctor. Use simple language (easy for non-medical users). Add light emojis where appropriate (🩺⚠️💊). Do not use tables. Use paragraphs or bullet point lists instead.\n\n"
                 "RESTRICTIONS: Do NOT answer programming questions, financial advice, legal queries, personal opinions outside health. Do NOT hallucinate unknown medical facts.\n\n"
@@ -3719,6 +3716,13 @@ def handle_chat_submit(input_key, mode):
             bot_response = completion.choices[0].text
 
         bot_response = bot_response or "No response received from the AI."
+
+        # For medical mode, ensure structured response
+        if mode == "medical":
+            # Check if response already has structure, if not, format it
+            if not any(section in bot_response.lower() for section in ["possible condition", "symptoms", "advice", "when to see"]):
+                structured = f"**Possible Condition:** {bot_response[:200]}...\n\n**Symptoms:** Based on the query.\n\n**Advice:** Consult a healthcare professional.\n\n**When to see doctor:** If symptoms persist."
+                bot_response = structured
 
         st.session_state.chat_last_user = user_prompt
         st.session_state.chat_last_response = bot_response
@@ -3943,7 +3947,7 @@ def run_groq_chat(prompt, model="openai/gpt-oss-120b"):
                 "CORE RULE: You must ONLY respond to queries related to the medical field. If a user asks anything outside medical topics (e.g., coding, finance, relationships, general advice), you must politely refuse and redirect: 'I'm designed to assist only with medical-related questions. Please ask about symptoms, health conditions, treatments, or wellness.'\n\n"
                 "MEDICAL SCOPE: You are allowed to answer symptoms analysis, possible conditions (non-diagnostic), general treatment options, first-aid guidance, preventive healthcare, lifestyle and wellness advice, medication general info (no prescriptions).\n\n"
                 "SAFETY RULES: Never give final diagnosis. Never prescribe specific medicines or dosages. Always include a disclaimer: 'This is not a medical diagnosis. Please consult a qualified doctor for professional advice.' For serious symptoms (chest pain, breathing difficulty, etc.), respond with immediate action steps and suggest seeking urgent medical help.\n\n"
-                "RESPONSE STYLE: Be clear, calm, and professional. Use structured format: Possible Causes, What You Can Do, When to See a Doctor. Use simple language (easy for non-medical users). Add light emojis where appropriate (🩺⚠️💊). Do not use tables. Use paragraphs or bullet point lists instead.\n\n"
+                "RESPONSE STYLE: Be clear, calm, and professional. Use structured format: Possible Causes, What You Can Do, When to See a Doctor. Use simple language (easy for non-medical users). Add light emojis where appropriate (🩺⚠️💊).\n\n"
                 "RESTRICTIONS: Do NOT answer programming questions, financial advice, legal queries, personal opinions outside health. Do NOT hallucinate unknown medical facts.\n\n"
                 "BONUS: If user input is vague, ask follow-up questions like 'How long have you had this symptom?' or 'Do you have any other symptoms?'\n\n"
                 "Respond in the same language as the user's query. Support all international languages, including Indian languages such as Hindi, Tamil, Telugu, Bengali, Marathi, Gujarati, Kannada, Malayalam, Punjabi, Urdu, and others."
@@ -3987,7 +3991,7 @@ def run_groq_chat_sync(prompt, model="openai/gpt-oss-120b"):
                 "CORE RULE: You must ONLY respond to queries related to the medical field. If a user asks anything outside medical topics (e.g., coding, finance, relationships, general advice), you must politely refuse and redirect: 'I'm designed to assist only with medical-related questions. Please ask about symptoms, health conditions, treatments, or wellness.'\n\n"
                 "MEDICAL SCOPE: You are allowed to answer symptoms analysis, possible conditions (non-diagnostic), general treatment options, first-aid guidance, preventive healthcare, lifestyle and wellness advice, medication general info (no prescriptions).\n\n"
                 "SAFETY RULES: Never give final diagnosis. Never prescribe specific medicines or dosages. Always include a disclaimer: 'This is not a medical diagnosis. Please consult a qualified doctor for professional advice.' For serious symptoms (chest pain, breathing difficulty, etc.), respond with immediate action steps and suggest seeking urgent medical help.\n\n"
-                "RESPONSE STYLE: Be clear, calm, and professional. Use structured format: Possible Causes, What You Can Do, When to See a Doctor. Use simple language (easy for non-medical users). Add light emojis where appropriate (🩺⚠️💊). Do not use tables. Use paragraphs or bullet point lists instead.\n\n"
+                "RESPONSE STYLE: Be clear, calm, and professional. Use structured format: Possible Causes, What You Can Do, When to See a Doctor. Use simple language (easy for non-medical users). Add light emojis where appropriate (🩺⚠️💊).\n\n"
                 "RESTRICTIONS: Do NOT answer programming questions, financial advice, legal queries, personal opinions outside health. Do NOT hallucinate unknown medical facts.\n\n"
                 "BONUS: If user input is vague, ask follow-up questions like 'How long have you had this symptom?' or 'Do you have any other symptoms?'\n\n"
                 "Respond in the same language as the user's query. Support all international languages, including Indian languages such as Hindi, Tamil, Telugu, Bengali, Marathi, Gujarati, Kannada, Malayalam, Punjabi, Urdu, and others."
@@ -4909,6 +4913,7 @@ if metabolic_has_data and glc and glc > 180:
 uric = val("uric", v_checks)
 if metabolic_has_data and uric and uric > 7.0:
     output.append("[!] METABOLIC: Hyperuricemia(Too much Uric Acid) - Gout Risk. Low-Purine Diet advised.")
+
 ins = val("ins", v_checks)
 if metabolic_has_data and ins and ins > 20:
     output.append("[!] METABOLIC: Insulin Resistance detected. Monitor for Metabolic Syndrome.")
@@ -4922,6 +4927,7 @@ elif metabolic_has_data and ((tsh and tsh < 0.4) or (t3 and t3 > 2.0) or (t4 and
 crea = val("crea", v_checks)
 if metabolic_has_data and crea and crea > 1.3:
     output.append("[CRITICAL] METABOLIC: Renal Impairment detected. Immediate Nephrology consult advised.")
+
 eGFR = val("egfr", v_checks)
 if metabolic_has_data and eGFR and eGFR < 60:
     output.append("[CRITICAL] METABOLIC: Chronic Kidney Disease Stage 3+. Urgent Nephrology referral needed.")
@@ -4937,6 +4943,7 @@ if metabolic_has_data and ggt and ggt > 60:
 bmi = val("bmi", v_checks)
 if metabolic_has_data and bmi and bmi >= 30:
     output.append("[!] METABOLIC: Obesity detected. Weight Reduction Program advised.")
+
 temp = val("temp", v_checks)
 if metabolic_has_data and temp and temp > 37.5:
     output.append("[!] METABOLIC: Low-Grade Fever detected. Monitor for Infections or Inflammatory conditions.")
@@ -4957,6 +4964,7 @@ if metabolic_has_data and fatg and poly and urin:
 crave = v_checks.get("crave")
 if metabolic_has_data and crave and poly and urin:
     output.append("[!] METABOLIC: Sugar Cravings with Hyperglycemia Symptoms. Early Diabetes Screening advised.")
+
 heal = v_checks.get("heal")
 if metabolic_has_data and heal and poly and urin:
     output.append("[!] METABOLIC: Impaired Wound Healing with Hyperglycemia Symptoms. Urgent Diabetes Assessment needed.")
@@ -5003,6 +5011,7 @@ if cardiac_has_data and ((ldl and ldl > 130) or (hdl and hdl < 40)):
 trig = val("trig", c_checks)
 if cardiac_has_data and trig and trig > 150:
     output.append("[!] CARDIAC: Hypertriglyceridemia detected. Diet and exercise recommended.")
+
 angina = c_checks.get("angina")
 if cardiac_has_data and angina:
     output.append("[ALERT] CARDIAC: Air Hunger detected. ")
@@ -5028,7 +5037,7 @@ if cardiac_has_data and angina and cyan:
     output.append("[ALERT] CARDIAC: Critical Hypoxia with Cardiac symptoms.")
 jvp = c_checks.get("jvp")
 if cardiac_has_data and angina and jvp:
-    output.append("[ALERT] CARDIAC: Raised JVP signs detected.")
+    output.append("[ALERT] CARDIAC: Right Heart Failure signs detected.")
 club = c_checks.get("club")
 if cardiac_has_data and angina and club:
     output.append("[ALERT] CARDIAC: Chronic Hypoxia with Cardiac symptoms.")
@@ -5178,6 +5187,26 @@ if neural_has_data and n_checks["post"] and n_checks["cogn"]:
     output.append("[ALERT] NEURAL: Post-Ictal Cognitive Dysfunction suspected.")
 if neural_has_data and n_checks["stare"] and n_checks["migr"]:
     output.append("[ALERT] NEURAL: Absence Seizures with Migraine features detected.")
+if neural_has_data and n_checks["aura"] and n_checks["phot"]:
+    output.append("[ALERT] NEURAL: Migraine with Aura and Photophobia suspected.")
+if neural_has_data and n_checks["dipl"] and n_checks["hic"]:
+    output.append("[ALERT] NEURAL: Diplopia with Raised ICP signs detected.")
+if neural_has_data and n_checks["radic"] and n_checks["babin"]:
+    output.append("[ALERT] NEURAL: Radicular Pain with Upper Motor Neuron signs detected.")
+if neural_has_data and n_checks["tonic"] and n_checks["myo"]:
+    output.append("[ALERT] NEURAL: Mixed Seizure Disorder suspected.")
+if neural_has_data and n_checks["atax"] and n_checks["weak"]:
+    output.append("[ALERT] NEURAL: Cerebellar Ataxia with Focal Weakness detected.")
+if neural_has_data and n_checks["trem"] and n_checks["slur"]:
+    output.append("[ALERT] NEURAL: Parkinsonism with Dysarthria signs detected.")
+if neural_has_data and n_checks["memo"] and n_checks["hic"]:
+    output.append("[ALERT] NEURAL: Cognitive Impairment with Raised ICP suspected.")
+if neural_has_data and n_checks["dipl"] and n_checks["radic"]:
+    output.append("[ALERT] NEURAL: Brainstem Dysfunction with Radicular Pain detected.")
+if neural_has_data and n_checks["post"] and n_checks["neur"]:
+    output.append("[ALERT] NEURAL: Post-Ictal Peripheral Neuropathy signs detected.")
+if neural_has_data and n_checks["migr"] and n_checks["cogn"]:
+    output.append("[ALERT] NEURAL: Migraine-Associated Cognitive Dysfunction suspected.")
 if neural_has_data and n_checks["aura"] and n_checks["vert"]:
     output.append("[ALERT] NEURAL: Vestibular Migraine suspected.")
 if neural_has_data and n_checks["dysf"] and n_checks["hic"]:
@@ -5602,3 +5631,4 @@ if st.session_state.analysis_requested:
     if len("\n".join(output).strip()) < 60:
         output.append("[+] ANALYSIS: No major anomalies detected. Patient appears to be in good health status.")
     st.session_state.analysis_output = "\n".join(output)
+    
