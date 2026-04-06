@@ -2835,6 +2835,29 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# Remove any remaining Streamlit host branding that may appear outside the app container
+st.markdown(
+    """
+    <script>
+    const removeStreamlitBranding = () => {
+        document.querySelectorAll(
+            'footer:not(.custom-footer), .stApp > footer, .stDeployButton, .viewerBadge_container__1QSob, [data-testid="stDecorationBadge"], .streamlit-badge, .decorationContainer, [title="Made with Streamlit"], a[href*="streamlit.io"], a[href*="streamlit.app"]'
+        ).forEach(el => el.remove());
+        document.querySelectorAll('div, span, a').forEach(el => {
+            if (el.innerText && el.innerText.includes('Hosted with Streamlit')) {
+                el.remove();
+            }
+        });
+    };
+    const observer = new MutationObserver(removeStreamlitBranding);
+    observer.observe(document, { childList: true, subtree: true });
+    window.addEventListener('load', removeStreamlitBranding);
+    setTimeout(removeStreamlitBranding, 1000);
+    </script>
+    """,
+    unsafe_allow_html=True,
+)
+
 # ------------ Pages -------------
 if "page" not in st.session_state:
     st.session_state.page = "profile"
