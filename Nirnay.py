@@ -3087,16 +3087,6 @@ if page == "profile":
                     <div class="status-badge">Ready to assess</div>
                 </div>
             </div>
-            <div class="metrics-grid">
-                <div class="metric-pill">
-                    <strong>Profile readiness</strong>
-                    <span>{'Complete' if st.session_state.patient_name and st.session_state.patient_age and st.session_state.patient_gender else 'Pending details'}</span>
-                </div>
-                <div class="metric-pill">
-                    <strong>Saved workflows</strong>
-                    <span>{len(st.session_state.saved_profiles)} saved profiles</span>
-                </div>
-            </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -4565,10 +4555,6 @@ if page == "analysis":
                         <div class='metric-pill'><strong>{len(tab_names)} categories</strong><span>   Structured data sections available.   </span></div>
                     </div>
                 </div>
-                <div class='glass-card action-card'>
-                    <div class='card-header'><span class='section-icon'>⚡</span> Workspace actions</div>
-                    <div class='profile-meta'>Run analysis, save progress, or export insights from a polished dashboard experience.</div>
-                </div>
             </div>
         </div>
         """,
@@ -4622,16 +4608,6 @@ if page == "analysis":
     st.markdown('<div class="analysis-layout">', unsafe_allow_html=True)
     st.markdown('<div class="col-left">', unsafe_allow_html=True)
     st.markdown("<div class='input-section'>", unsafe_allow_html=True)
-    st.markdown("### 📥 Clinical Inputs")
-    st.markdown(
-        """
-        <div class='glass-card'>
-            <div class='card-header'><span class='section-icon'>🧩</span> Intake dashboard</div>
-            <p class='profile-meta'>Choose a category, enter your core data, and use the dashboard to generate concise insights.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
     with expander_placeholder.expander("Clinical Intake Dashboard", expanded=True):
         tabs_objs = st.tabs([x[1] for x in tab_names])
