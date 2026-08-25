@@ -2851,9 +2851,20 @@ if "uploaded_image_report" not in st.session_state:
     st.session_state.uploaded_image_report = ""
 if "manual_symptoms" not in st.session_state:
     st.session_state.manual_symptoms = ""
+if "input_reset_version" not in st.session_state:
+    st.session_state.input_reset_version = 0
 
 if "last_button_click" not in st.session_state:
     st.session_state.last_button_click = {"key": None, "time": 0.0}
+
+
+def rerun_app():
+    """Rerun the app across supported Streamlit versions."""
+    if hasattr(st, "rerun"):
+        st.rerun()
+    elif hasattr(st, "experimental_rerun"):
+        st.experimental_rerun()
+
 
 def click_debounced(key, threshold=0.8):
     now = time.time()
@@ -2866,8 +2877,7 @@ def click_debounced(key, threshold=0.8):
 
 def set_page(target):
     st.session_state.page = target
-    if hasattr(st, "experimental_rerun"):
-        st.experimental_rerun()
+    rerun_app()
 
 
 def remove_uploaded_image(index):
@@ -2893,8 +2903,7 @@ def save_profile():
         if label not in [f"{p['name']} · {p['age']} · {p['gender']}" for p in st.session_state.saved_profiles]:
             st.session_state.saved_profiles.append(profile)
         st.session_state.profile_saved = True
-    if hasattr(st, "experimental_rerun"):
-        st.experimental_rerun()
+    rerun_app()
 
 
 def load_saved_profile():
@@ -2905,8 +2914,7 @@ def load_saved_profile():
             st.session_state.patient_age = p["age"]
             st.session_state.patient_gender = p["gender"]
             break
-    if hasattr(st, "experimental_rerun"):
-        st.experimental_rerun()
+    rerun_app()
 
 
 def continue_to_analysis():
@@ -2918,8 +2926,7 @@ def reset_profile():
     st.session_state.patient_age = ""
     st.session_state.patient_gender = ""
     st.session_state.agree_disclaimer = False
-    if hasattr(st, "experimental_rerun"):
-        st.experimental_rerun()
+    rerun_app()
 
 
 def render_navbar():
@@ -2969,13 +2976,27 @@ def request_analysis():
     st.session_state.analysis_requested = True
 
 
+def save_draft():
+    st.session_state.draft_saved = True
+
+
+def reset_analysis():
+    st.session_state.input_reset_version += 1
+    st.session_state.uploaded_images = []
+    st.session_state.uploaded_image_report = ""
+    st.session_state.manual_symptoms = ""
+    st.session_state.analysis_output = ""
+    st.session_state.analysis_requested = False
+    st.session_state.draft_saved = False
+
+
 def launch_chat(mode=None):
     if mode is None:
         mode = (
             "medical" if st.session_state.get("chat_choice") == "Medical Assistant" else "quick"
         )
     st.session_state.chat_mode = mode
-    st.session_state.page = "chat"
+    set_page("chat")
 
 # ------------ Disclaimer -------------
 
@@ -3624,8 +3645,7 @@ def clear_chat_history(mode=None):
         st.session_state.chat_history_quick = []
     st.session_state.chat_warning = ""
     st.session_state.chat_error = ""
-    if hasattr(st, "experimental_rerun"):
-        st.experimental_rerun()
+    rerun_app()
 
 
 def handle_chat_submit(input_key, mode):
@@ -3890,6 +3910,7 @@ def has_data(values):
 
 def make_inputs(tab, fields):
     out = {}
+    widget_version = st.session_state.get("input_reset_version", 0)
     numbers = [(k, v) for k, v in fields.items() if v["type"] == "num"]
     checks = [(k, v) for k, v in fields.items() if v["type"] == "chk"]
 
@@ -3898,7 +3919,7 @@ def make_inputs(tab, fields):
         for row in chunked(numbers, 3):
             cols = tab.columns(len(row))
             for col, (k, v) in zip(cols, row):
-                out[k] = parse_float(col.text_input(v["label"], key=f"{v['id']}"))
+                out[k] = parse_float(col.text_input(v["label"], key=f"{v['id']}_{widget_version}"))
 
     # Use three columns for checkboxes to keep the form compact and labels readable.
     if checks:
@@ -3908,7 +3929,7 @@ def make_inputs(tab, fields):
             for row in chunked(checks, 3):
                 cols = expander.columns(len(row))
                 for col, (k, v) in zip(cols, row):
-                    out[k] = col.checkbox(v["label"], key=f"{v['id']}")
+                    out[k] = col.checkbox(v["label"], key=f"{v['id']}_{widget_version}")
 
     return out
 
@@ -4722,9 +4743,12 @@ if page == "analysis":
                 on_click=request_analysis,
             )
         with action_cols[1]:
-            st.button("Save Draft", key="save_draft")
+            st.button("Save Draft", key="save_draft", on_click=save_draft)
         with action_cols[2]:
-            st.button("Reset", key="reset_analysis")
+            st.button("Reset", key="reset_analysis", on_click=reset_analysis)
+
+        if st.session_state.get("draft_saved"):
+            st.success("Draft saved for this session.")
 
         st.markdown("</div>", unsafe_allow_html=True)  # close action-section
 
@@ -5617,4 +5641,6 @@ if st.session_state.analysis_requested:
     if len("\n".join(output).strip()) < 60:
         output.append("[+] ANALYSIS: No major anomalies detected. Patient appears to be in good health status.")
     st.session_state.analysis_output = "\n".join(output)
+    st.session_state.analysis_requested = False
+    rerun_app()
     
